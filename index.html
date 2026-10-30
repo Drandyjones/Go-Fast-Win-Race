@@ -21,13 +21,6 @@
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif; --body:"Barlow",system-ui,Helvetica,Arial,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
-  --bg:#ffffff; --face:#ffffff; --panel:#f3f5f7; --ink:#000000; --ink-2:#3f4a55; --ink-3:#6f7b87; --line:#d5dbe1; --line-2:#e6eaee;
-  --accent:#b86f00; --accent-rgb:184,111,0; --accent-soft:rgba(184,111,0,.14); --accent-ink:#ffffff; --gust:#d9500a;
-  --window:rgba(0,0,0,.06); --obs:#000000; --halo:#ffffff;
-  --good:#117a46; --warn:#b86f00; --bad:#b3261e; --good-bg:#dff4e8; --warn-bg:#fbe9d6; --bad-bg:#f9e1df;
-  --m1:#2a78d6; --m2:#eb6834; --m3:#1baf7a; --m4:#eda100; --m5:#e87ba4; --m6:#6250d6;
-  --tide:#0a7db0; --tide-rgb:10,125,176; --tide-fill:rgba(10,125,176,.16); color-scheme:light}}
 :root[data-theme="light"]{
   --bg:#ffffff; --face:#ffffff; --panel:#f3f5f7; --ink:#000000; --ink-2:#3f4a55; --ink-3:#6f7b87; --line:#d5dbe1; --line-2:#e6eaee;
   --accent:#b86f00; --accent-rgb:184,111,0; --accent-soft:rgba(184,111,0,.14); --accent-ink:#ffffff; --gust:#d9500a;
@@ -41,17 +34,16 @@ body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--body);f
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
 .app{min-height:100%;display:flex;flex-direction:column}
 /* top bar */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
 .top h1{font:800 20px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;margin:0;white-space:nowrap}
 .top h1 i{color:var(--accent);font-style:normal}
-.top .sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top .brand{min-width:0;flex:1}
-.leds{display:flex;gap:9px;align-items:center}
-.led{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.top .sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.top .brand{min-width:0;flex:1 1 220px}
+.leds{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.led{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 .led i{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
 .led.ok i{background:var(--good);box-shadow:0 0 6px var(--good)} .led.warn i{background:var(--warn);box-shadow:0 0 6px var(--warn)} .led.bad i{background:var(--bad);box-shadow:0 0 6px var(--bad)}
-@media (max-width:480px){.led span{display:none}.top h1{font-size:17px}.top{gap:8px}}
-.top .brand{overflow:hidden}
+@media (max-width:480px){.top h1{font-size:19px}.leds{order:3;width:100%;padding-top:2px}}
 .icon{background:none;border:1px solid var(--line);color:var(--ink-2);width:34px;height:34px;border-radius:4px;display:inline-grid;place-items:center;cursor:pointer;padding:0}
 .icon svg{width:18px;height:18px;display:block}
 /* pages */
@@ -72,6 +64,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pill.good{background:var(--good-bg);color:var(--good)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
 /* race setup */
 .setup{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:end;padding:4px 0 14px;border-bottom:1px solid var(--line)}
+.tsel{font:700 36px/1 var(--display);color:var(--ink);background:transparent;border:0;border-bottom:2px dotted var(--ink-3);border-radius:0;padding:0 2px 2px;-webkit-appearance:none;appearance:none;cursor:pointer;letter-spacing:.01em;text-align:inherit}
+.tsel:active,.tsel:focus{border-bottom-color:var(--accent)}
+.range .vals{align-items:end}
 .setup label{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:4px}
 input[type=date],input[type=number],input[type=time],input[type=text],input[type=url],select,button,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:7px 9px;max-width:100%}
 input[type=date]{font:700 22px/1 var(--display);padding:4px 8px;letter-spacing:.02em}
@@ -166,11 +161,11 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
   <header class="top">
     <div class="brand">
       <h1>Go Fast <i>·</i> Win Race</h1>
-      <div class="sub" id="locLine">Levington · River Orwell · Gust, Observation &amp; Forecast Aggregation, Stream &amp; Tide</div>
+      <div class="sub" id="locLine">Levington · River Orwell · Suffolk Yacht Harbour</div>
     </div>
     <div class="leds">
-      <span class="led" id="ledModels" title="Forecast models"><i></i><span>Mod</span></span>
-      <span class="led" id="ledEns" title="Ensemble"><i></i><span>Ens</span></span>
+      <span class="led" id="ledModels" title="Forecast models"><i></i><span>Models</span></span>
+      <span class="led" id="ledEns" title="Ensemble"><i></i><span>Ensemble</span></span>
       <span class="led" id="ledLive" title="Live stations"><i></i><span>Live</span></span>
       <span class="led" id="ledTide" title="Tide source"><i></i><span>Tide</span></span>
     </div>
@@ -183,8 +178,11 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
     <div class="setup">
       <div><label for="date">Race date</label><input type="date" id="date"></div>
       <div class="range">
-        <div class="vals"><div><span>Start</span><output id="startOut">09:30</output></div><div style="text-align:right"><span>Finish</span><output id="endOut">13:00</output></div></div>
-        <div class="dual"><div class="fill" id="fill"></div><input type="range" id="start" min="0" max="96" step="1" value="38" aria-label="Race start time"><input type="range" id="end" min="0" max="96" step="1" value="52" aria-label="Race finish time"></div>
+        <div class="vals">
+          <div><span>Start · tap to pick</span><select id="start" class="tsel" aria-label="Race start time"></select></div>
+          <div style="text-align:right"><span>Finish · tap to pick</span><select id="end" class="tsel" aria-label="Race finish time"></select></div>
+        </div>
+        <div class="dual"><div class="fill" id="fill"></div><input type="range" id="startR" min="0" max="96" step="1" value="38" aria-label="Race start slider"><input type="range" id="endR" min="0" max="96" step="1" value="52" aria-label="Race finish slider"></div>
       </div>
     </div>
     <div id="tiles"></div>
@@ -238,11 +236,27 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
       <div id="live"></div>
     </section>
     <section class="sec">
+      <h2>Where you've seen these models<span class="tag">Sources</span></h2>
+      <p class="note">The six models below are the same ones behind the forecast sites. This app reads them directly from the model centres via Open-Meteo, so the consensus is the "4 websites" compared for you.</p>
+      <div class="tableWrap"><table id="siteTable">
+        <thead><tr><th>Website / app</th><th>Models it shows</th></tr></thead>
+        <tbody>
+          <tr><td>Windy</td><td><span class="swatch" style="background:var(--m1)"></span>ECMWF · <span class="swatch" style="background:var(--m2)"></span>GFS · <span class="swatch" style="background:var(--m3)"></span>ICON · <span class="swatch" style="background:var(--m4)"></span>UK Met Office · <span class="swatch" style="background:var(--m5)"></span>Météo-France AROME</td></tr>
+          <tr><td>PredictWind</td><td><span class="swatch" style="background:var(--m1)"></span>ECMWF · <span class="swatch" style="background:var(--m2)"></span>GFS · <span class="swatch" style="background:var(--m4)"></span>UK Met Office, plus its own PWG/PWE runs</td></tr>
+          <tr><td>BBC Weather</td><td>DTN / MeteoGroup blend, led by <span class="swatch" style="background:var(--m1)"></span>ECMWF</td></tr>
+          <tr><td>XC Weather</td><td><span class="swatch" style="background:var(--m2)"></span>GFS</td></tr>
+          <tr><td>Met Office app</td><td><span class="swatch" style="background:var(--m4)"></span>UK Met Office (UKV / global)</td></tr>
+          <tr><td>Windguru</td><td><span class="swatch" style="background:var(--m2)"></span>GFS · <span class="swatch" style="background:var(--m3)"></span>ICON · <span class="swatch" style="background:var(--m1)"></span>ECMWF (paid tier)</td></tr>
+          <tr><td>AccuWeather</td><td>Own blend of global models including <span class="swatch" style="background:var(--m1)"></span>ECMWF and <span class="swatch" style="background:var(--m2)"></span>GFS</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section class="sec">
       <h2>Models<span class="tag">Window mean · err today</span></h2>
       <div class="tableWrap"><table id="modelTable"></table></div>
       <div class="caption" id="tableCap"></div>
     </section>
-    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v7.</footer>
+    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v9.</footer>
   </main>
 
   <nav class="tabs" aria-label="Pages">
@@ -327,6 +341,9 @@ const save=()=>{try{localStorage.setItem('lrw',JSON.stringify(store))}catch(e){}
 let wind=null,ens=null,omTide=null,hhaPred=null,hhaTide=null,live={},view=null;
 const today=new Date();today.setHours(0,0,0,0);
 const dateEl=$('date'),startEl=$('start'),endEl=$('end');
+[startEl,endEl].forEach(sel=>{for(let q=0;q<=96;q++){const o=document.createElement('option');o.value=q;o.textContent=hm(q);sel.appendChild(o)}});startEl.value=38;endEl.value=52;
+const startR=$('startR'),endR=$('endR');
+function syncSliders(){startR.value=startEl.value;endR.value=endEl.value;const pc=v=>v/96*100;$('fill').style.left=pc(+startEl.value)+'%';$('fill').style.width=(pc(+endEl.value)-pc(+startEl.value))+'%'}
 const toISO=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const maxD=new Date(today);maxD.setDate(maxD.getDate()+6);
 dateEl.min=toISO(today);dateEl.max=toISO(maxD);
@@ -480,8 +497,7 @@ function shifts(st){ // consensus direction shifts across the day, with model ti
 
 // ---------- render ----------
 function render(){
-  $('startOut').textContent=hm(+startEl.value);$('endOut').textContent=hm(+endEl.value);
-  const pc=v=>v/96*100;$('fill').style.left=pc(+startEl.value)+'%';$('fill').style.width=(pc(+endEl.value)-pc(+startEl.value))+'%';
+  syncSliders();
   const st=windowStats();
   renderBrief(st);renderTiles(st);renderLive();renderTimeline(st);renderShifts(st);renderCompass(st);renderSpeed(st);renderTable(st);renderStreamNote(st);
 }
@@ -760,9 +776,11 @@ function renderTable(st){
 }
 
 // ---------- events ----------
-function clampRange(which){let a=+startEl.value,b=+endEl.value;if(a>=b){if(which==='start')startEl.value=b-1;else endEl.value=a+1}}
-startEl.addEventListener('input',()=>{clampRange('start');store.start=startEl.value;save();view=null;render()});
-endEl.addEventListener('input',()=>{clampRange('end');store.end=endEl.value;save();view=null;render()});
+function clampRange(which){let a=+startEl.value,b=+endEl.value;if(a>=b){if(which==='start')endEl.value=Math.min(96,a+4);else startEl.value=Math.max(0,b-4)}}
+startEl.addEventListener('change',()=>{clampRange('start');store.start=startEl.value;store.end=endEl.value;save();view=null;render()});
+endEl.addEventListener('change',()=>{clampRange('end');store.start=startEl.value;store.end=endEl.value;save();view=null;render()});
+startR.addEventListener('input',()=>{startEl.value=startR.value;if(+startEl.value>=+endEl.value)startEl.value=+endEl.value-1;store.start=startEl.value;save();view=null;render()});
+endR.addEventListener('input',()=>{endEl.value=endR.value;if(+endEl.value<=+startEl.value)endEl.value=+startEl.value+1;store.end=endEl.value;save();view=null;render()});
 dateEl.addEventListener('change',()=>{store.date=dateEl.value;save();view=null;render()});
 ['obsTime','obsSpeed','obsGust','obsDir','kStream','gustThr','slackOff','aLW','aHW','chW','chD','flW','flH','diamond'].forEach(k=>$(k).addEventListener('input',()=>{store[k]=$(k).value;save();render()}));
 $('streamMethod').addEventListener('change',()=>{store.streamMethod=$('streamMethod').value;save();render()});
@@ -782,8 +800,8 @@ function setLed(id,cls){const e=$(id);e.classList.remove('ok','warn','bad');if(c
 function updateLeds(){setLed('ledModels',wind?(wind.models.length>=4?'ok':'warn'):'bad');setLed('ledEns',ens?'ok':'warn');
   setLed('ledLive',!relayURL()?'':Object.keys(live).length?'ok':'bad');setLed('ledTide',hhaPred?'ok':omTide?'warn':'bad')}
 function applyTheme(){const t=store.theme;const root=document.documentElement;if(t)root.setAttribute('data-theme',t);else root.removeAttribute('data-theme');
-  const dark=t?t==='dark':!window.matchMedia('(prefers-color-scheme: light)').matches;$('themeBtn').title=dark?'Switch to day mode':'Switch to night mode'}
-$('themeBtn').addEventListener('click',()=>{const root=document.documentElement;const cur=root.getAttribute('data-theme');const dark=cur?cur==='dark':!window.matchMedia('(prefers-color-scheme: light)').matches;store.theme=dark?'light':'dark';save();applyTheme();render()});
+  const dark=t!=='light';$('themeBtn').title=dark?'Switch to day mode':'Switch to night mode'}
+$('themeBtn').addEventListener('click',()=>{const root=document.documentElement;const dark=root.getAttribute('data-theme')!=='light';store.theme=dark?'light':'dark';save();applyTheme();render()});
 applyTheme();
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===t.dataset.page));store.page=t.dataset.page;save();window.scrollTo(0,0);if(t.dataset.page==='pgTrace')renderTimeline(windowStats())}));
 if(store.page&&document.getElementById(store.page)){const t=document.querySelector('.tab[data-page="'+store.page+'"]');if(t)t.click()}
