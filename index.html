@@ -267,7 +267,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
       <div class="tableWrap"><table id="modelTable"></table></div>
       <div class="caption" id="tableCap"></div>
     </section>
-    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v12.</footer>
+    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v12.1</footer>
   </main>
 
   <nav class="tabs" aria-label="Pages">
@@ -325,7 +325,7 @@ const LOC={lat:51.995,lon:1.274};
 const TIDE_PT={lat:51.93,lon:1.33};
 const HHA='https://hha.co.uk/wp-content/uploads/hha-met-api/';
 const STATIONS={harwichhmj:{name:'Harwich HM Jetty',note:'harbour · 2.9 nm S',brg:168,c:'--obs'},erwarton:{name:'Erwarton Beacon',note:'Stour · 3.3 nm SW',brg:217,c:'--m3'},landguardgill:{name:'Landguard',note:'coast · 3.9 nm SSE',brg:156,c:'--m1'},eastfortmassoc:{name:'East Fort Massac',note:'approach · 12 nm ESE',brg:124,c:'--m5'}};
-function stationKey(){const v=stationKey();if(v&&v!=='auto'&&STATIONS[v])return v;const c=consensusAt(Date.now());const avail=Object.keys(STATIONS).filter(k=>live[k]&&live[k].length&&k!=='eastfortmassoc');const pool=avail.length?avail:Object.keys(STATIONS).filter(k=>k!=='eastfortmassoc');if(!c||c.dir==null)return pool.includes('harwichhmj')?'harwichhmj':pool[0];let best=null;pool.forEach(k=>{const d=Math.abs(offset(STATIONS[k].brg,c.dir));if(!best||d<best.d)best={k,d}});return best.d<=70?best.k:(pool.includes('harwichhmj')?'harwichhmj':pool[0])}
+function stationKey(){const v=document.getElementById('station').value;if(v&&v!=='auto'&&STATIONS[v])return v;const c=consensusAt(Date.now());const avail=Object.keys(STATIONS).filter(k=>live[k]&&live[k].length&&k!=='eastfortmassoc');const pool=avail.length?avail:Object.keys(STATIONS).filter(k=>k!=='eastfortmassoc');if(!c||c.dir==null)return pool.includes('harwichhmj')?'harwichhmj':pool[0];let best=null;pool.forEach(k=>{const d=Math.abs(offset(STATIONS[k].brg,c.dir));if(!best||d<best.d)best={k,d}});return best.d<=70?best.k:(pool.includes('harwichhmj')?'harwichhmj':pool[0])}
 const MODELS=[
   {id:'ecmwf_ifs025',name:'ECMWF IFS',used:'Windy · BBC (DTN blend) · PredictWind',c:'--m1'},
   {id:'gfs_seamless',name:'NOAA GFS',used:'XC Weather · Windy · PredictWind',c:'--m2'},
@@ -461,8 +461,8 @@ function obsSeries(key){ // 10-min means from a live station, kn
     if(r.wind_speed!=null){bucket.s.push(r.wind_speed*MS2KN)}if(r.gust_speed!=null)bucket.g.push(r.gust_speed*MS2KN);if(r.wind_direction!=null){const a=r.wind_direction*Math.PI/180;bucket.x+=Math.sin(a);bucket.y+=Math.cos(a)}if(r.atmos_pressure!=null)bucket.p.push(r.atmos_pressure)}
   if(bucket)out.push(fin(bucket));return out;
   function fin(b){return {t:b.t+3e5,spd:b.s.length?mean(b.s):null,gst:b.g.length?Math.max(...b.g):null,dir:(b.x||b.y)?(Math.atan2(b.x,b.y)*180/Math.PI+360)%360:null}}}
-function latest(s){const a=live[s];if(!a||!a.length)return null;const r=a[a.length-1];const h3=a.find(q=>q.timestamp>=r.timestamp-3*3600);
-  return {t:r.timestamp*1000,spd:r.wind_speed*MS2KN,gst:r.gust_speed*MS2KN,dir:r.wind_direction,p:r.atmos_pressure,dp:h3?r.atmos_pressure-h3.atmos_pressure:null,temp:r.temperature,gmax:Math.max(...a.filter(q=>q.timestamp>=r.timestamp-3600).map(q=>q.gust_speed||0))*MS2KN}}
+function latest(s){const a0=live[s];if(!a0||!a0.length)return null;const a=a0.filter(q=>q.wind_speed!=null&&q.wind_direction!=null);if(!a.length)return null;const r=a[a.length-1];const h3=a.find(q=>q.timestamp>=r.timestamp-3*3600);
+  return {t:r.timestamp*1000,spd:r.wind_speed*MS2KN,gst:(r.gust_speed??r.wind_speed)*MS2KN,dir:r.wind_direction,p:r.atmos_pressure??null,dp:(h3&&r.atmos_pressure!=null&&h3.atmos_pressure!=null)?r.atmos_pressure-h3.atmos_pressure:null,temp:r.temperature??null,gmax:Math.max(...a.filter(q=>q.timestamp>=r.timestamp-3600).map(q=>q.gust_speed||0))*MS2KN}}
 function manualObs(){const sp=parseFloat($('obsSpeed').value),d=parseFloat($('obsDir').value),g=parseFloat($('obsGust').value),t=$('obsTime').value;
   if(isNaN(sp)||!t)return null;const [hh,mm]=t.split(':').map(Number);const day=localDate(dateEl.value);
   return {spd:sp,dir:isNaN(d)?null:d,gst:isNaN(g)?null:g,t:new Date(day.getFullYear(),day.getMonth(),day.getDate(),hh,mm).getTime()}}
@@ -511,8 +511,9 @@ function shifts(st){ // consensus direction shifts across the day, with model ti
 // ---------- render ----------
 function render(){
   syncSliders();
-  const st=windowStats();
-  renderBrief(st);renderTiles(st);renderLive();renderLiveChart(st);renderTimeline(st);renderShifts(st);renderCompass(st);renderSpeed(st);renderTable(st);renderStreamNote(st);
+  const st=windowStats();const errs=[];
+  [['brief',()=>renderBrief(st)],['tiles',()=>renderTiles(st)],['live',()=>renderLive()],['liveChart',()=>renderLiveChart(st)],['timeline',()=>renderTimeline(st)],['shifts',()=>renderShifts(st)],['compass',()=>renderCompass(st)],['speedbar',()=>renderSpeed(st)],['modelTable',()=>renderTable(st)],['streamNote',()=>renderStreamNote(st)]].forEach(([id,fn])=>{try{fn()}catch(e){errs.push(id+': '+(e&&e.message||e));const el=$(id);if(el)el.innerHTML=`<p class="err">This panel hit an error (${(e&&e.message||e)}). Pull to refresh; if it persists, send this message to Claude.</p>`}});
+  if(errs.length)console.error('render errors',errs);
 }
 function renderLiveChart(st){
   const el=$('liveChart'),tag=$('accTag');if(!wind){el.innerHTML='<p class="caption">Waiting for forecast…</p>';return}
@@ -612,10 +613,10 @@ function renderLive(){
       <div class="big">${comp(L.dir)} ${L.spd.toFixed(0)}<small> kn · ${L.dir.toFixed(0)}°</small></div>
       <div class="row">gust ${L.gst.toFixed(0)} kn now · max ${L.gmax.toFixed(0)} kn last hour</div>
       <div class="row">${L.p!=null?L.p.toFixed(1)+' hPa'+(L.dp!=null?' ('+(L.dp>=0?'+':'')+L.dp.toFixed(1)+' in 3 h)':''):''}${L.temp!=null?' · '+L.temp.toFixed(1)+' °C':''}</div></div>`});
-  if(hhaTide&&hhaTide.length){const r=hhaTide[hhaTide.length-1];const r1=hhaTide[Math.max(0,hhaTide.length-16)];const rising=r.tide_level>r1.tide_level;const ts=tideState(r.timestamp*1000);
+  const tg=(hhaTide||[]).filter(q=>q.tide_level!=null);if(tg.length){const r=tg[tg.length-1];const r1=tg[Math.max(0,tg.length-16)];const rising=r.tide_level>r1.tide_level;const ts=tideState(r.timestamp*1000);
     s+=`<div class="st" style="border-color:var(--tide)"><div class="n">Harwich tide gauge</div><div class="age">${fmtT(r.timestamp*1000)} · ${age(r.timestamp*1000)}</div>
       <div class="big">${r.tide_level.toFixed(2)}<small> m CD · ${rising?'rising':'falling'}</small></div>
-      <div class="row">predicted ${r.tide_predicted.toFixed(2)} m · surge ${r.tide_surge>=0?'+':''}${r.tide_surge.toFixed(2)} m</div>
+      <div class="row">${r.tide_predicted!=null?'predicted '+r.tide_predicted.toFixed(2)+' m':''}${r.tide_surge!=null?' · surge '+(r.tide_surge>=0?'+':'')+r.tide_surge.toFixed(2)+' m':''}</div>
       <div class="row">${ts?`${ts.state.toLowerCase()} ${ts.frac}/12 · next ${ts.next.kind} ${fmtT(ts.next.t)} (${ts.next.h.toFixed(1)} m)`:''}</div></div>`}
   s+='</div>';
   const v=verify();if(v&&v.cons.s!=null){s+=`<p class="caption" style="margin-top:10px">Today since ${fmtT(v.since)} the consensus has run ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn against ${STATIONS[stationKey()].name}${v.cons.d!=null?` and ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right (veered)':'left (backed)'} of it`:''} · typical miss ${v.cons.mae.toFixed(1)} kn · ${v.n} ten-minute readings. Per-model errors are in the table below.</p>`}
