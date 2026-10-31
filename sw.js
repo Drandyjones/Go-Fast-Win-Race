@@ -1,6 +1,6 @@
 // GO FAST · WIN RACE service worker: keeps the app shell available offline and
 // picks up new versions on the next open. Live data and forecasts always go to the network.
-const SHELL = 'gfwr-shell-v12';
+const SHELL = 'gfwr-shell-v12-3';
 const SHELL_FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
