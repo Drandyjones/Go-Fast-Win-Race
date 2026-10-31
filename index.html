@@ -239,7 +239,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
     <section class="sec">
       <h2>Now<span class="tag" id="accTag">Observed vs consensus · ±6 h</span></h2>
       <div class="chartBox" id="liveChart"></div>
-      <div class="legend"><span><i class="obs"></i><b>Observed</b></span><span><i style="background:var(--obs);height:1px;border-top:1px dotted var(--obs);background:none"></i>Obs gust</span><span><i style="background:var(--accent);height:3px"></i>Consensus</span><span><i class="dash"></i>Consensus gust</span></div>
+      <div class="legend"><span><i class="obs"></i><b>Observed</b></span><span><i style="height:1px;border-top:1px dotted var(--obs);background:none"></i>Obs gust</span><span><i style="background:var(--ink-2)"></i>Nearest other station</span><span><i style="background:var(--accent);height:3px"></i>Consensus</span><span><i class="dash"></i>Consensus gust</span></div>
       <div class="caption" id="accCap">Left of the line: the last 6 hours, station readings against what the consensus said. Right: the next 6 hours of consensus forecast. Accuracy = 100% minus the typical miss as a share of the observed wind (speed) or of 90° (direction).</div>
     </section>
     <section class="sec">
@@ -267,7 +267,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
       <div class="tableWrap"><table id="modelTable"></table></div>
       <div class="caption" id="tableCap"></div>
     </section>
-    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v12.1</footer>
+    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v12.2</footer>
   </main>
 
   <nav class="tabs" aria-label="Pages">
@@ -283,7 +283,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
       <div class="hd"><h2 style="margin:0">Settings</h2><button type="button" id="sheetClose">Done</button></div>
       <div class="set">
         <div class="wide"><label for="relay">Live data relay URL (Cloudflare Worker)</label><input type="url" id="relay" placeholder="https://race-wind-relay.drandyjones.workers.dev (built in; override here)"></div>
-        <div><label for="station">Observed station</label><select id="station"><option value="auto">Auto (most upwind)</option><option value="harwichhmj">Harwich HM Jetty</option><option value="erwarton">Erwarton Beacon</option><option value="landguardgill">Landguard</option><option value="eastfortmassoc">East Fort Massac</option></select></div>
+        <div><label for="station">Observed station</label><select id="station"><option value="landguardgill">Landguard</option><option value="harwichhmj">Harwich HM Jetty</option><option value="erwarton">Erwarton Beacon</option><option value="eastfortmassoc">East Fort Massac</option><option value="auto">Auto (most upwind)</option></select></div>
         <div><label for="gustThr">Gust alert threshold, kn</label><input type="number" id="gustThr" min="10" max="40" step="1" value="20"></div>
         <div><button id="refresh" type="button" style="width:100%">Refresh data</button></div>
       </div>
@@ -325,6 +325,7 @@ const LOC={lat:51.995,lon:1.274};
 const TIDE_PT={lat:51.93,lon:1.33};
 const HHA='https://hha.co.uk/wp-content/uploads/hha-met-api/';
 const STATIONS={harwichhmj:{name:'Harwich HM Jetty',note:'harbour · 2.9 nm S',brg:168,c:'--obs'},erwarton:{name:'Erwarton Beacon',note:'Stour · 3.3 nm SW',brg:217,c:'--m3'},landguardgill:{name:'Landguard',note:'coast · 3.9 nm SSE',brg:156,c:'--m1'},eastfortmassoc:{name:'East Fort Massac',note:'approach · 12 nm ESE',brg:124,c:'--m5'}};
+function secondaryKey(){const p=stationKey();const order=['harwichhmj','erwarton','landguardgill','eastfortmassoc'];return order.find(k=>k!==p&&live[k]&&live[k].length)||null}
 function stationKey(){const v=document.getElementById('station').value;if(v&&v!=='auto'&&STATIONS[v])return v;const c=consensusAt(Date.now());const avail=Object.keys(STATIONS).filter(k=>live[k]&&live[k].length&&k!=='eastfortmassoc');const pool=avail.length?avail:Object.keys(STATIONS).filter(k=>k!=='eastfortmassoc');if(!c||c.dir==null)return pool.includes('harwichhmj')?'harwichhmj':pool[0];let best=null;pool.forEach(k=>{const d=Math.abs(offset(STATIONS[k].brg,c.dir));if(!best||d<best.d)best={k,d}});return best.d<=70?best.k:(pool.includes('harwichhmj')?'harwichhmj':pool[0])}
 const MODELS=[
   {id:'ecmwf_ifs025',name:'ECMWF IFS',used:'Windy · BBC (DTN blend) · PredictWind',c:'--m1'},
@@ -539,7 +540,7 @@ function renderLiveChart(st){
   const path=(pts,fn)=>{let d='',pen=false;pts.forEach(p=>{const v=fn(p);if(v==null){pen=false;return}d+=(pen?'L':'M')+X(p.t).toFixed(1)+','+Y(Math.min(v,maxK)).toFixed(1);pen=true});return d};
   if(cons.length){s+=`<path d="${path(cons,c=>c.gst)}" fill="none" stroke="var(--gust)" stroke-width="1.8" stroke-dasharray="5 4" stroke-opacity=".9"/>`;s+=`<path d="${path(cons,c=>c.spd)}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round"/>`;
     for(let t=t0;t<=b;t+=lstep){const c=consensusAt(t);if(!c||X(t)<ml+18)continue;s+=`<text class="tl-lbl" x="${X(t)}" y="${Y(c.spd)-8}" text-anchor="middle" font-size="15" fill="var(--ink)">${c.spd.toFixed(0)}</text>`}}
-  Object.keys(STATIONS).forEach(k=>{if(k===stationKey()||!live[k])return;const o2=(obsSeries(k)||[]).filter(p=>p.t>=a&&p.t<=now&&p.spd!=null);if(o2.length>1)s+=`<path d="${path(o2,p=>p.spd)}" fill="none" stroke="var(${STATIONS[k].c})" stroke-width="1.3" stroke-opacity=".7"/>`});
+  const sec=secondaryKey();if(sec){const o2=(obsSeries(sec)||[]).filter(p=>p.t>=a&&p.t<=now&&p.spd!=null);if(o2.length>1)s+=`<path d="${path(o2,p=>p.spd)}" fill="none" stroke="var(--ink-2)" stroke-width="1.3" stroke-opacity=".8"/>`}
   if(obs.length>1){s+=`<path d="${path(obs,p=>p.gst)}" fill="none" stroke="var(--obs)" stroke-width="1.2" stroke-dasharray="2 3"/>`;s+=`<path d="${path(obs,p=>p.spd)}" fill="none" stroke="var(--obs)" stroke-width="2.2" stroke-linejoin="round"/>`;const l=obs[obs.length-1];if(l.spd!=null)s+=`<circle cx="${X(l.t)}" cy="${Y(l.spd)}" r="4.5" fill="var(--bg)" stroke="var(--obs)" stroke-width="2"/><text class="tl-lbl" x="${X(l.t)-8}" y="${Y(l.spd)+5}" text-anchor="end" font-size="15" fill="var(--obs)">${l.spd.toFixed(0)}</text>`}
   if(mo&&mo.t>=a&&mo.t<=b){s+=`<circle cx="${X(mo.t)}" cy="${Y(Math.min(mo.spd,maxK))}" r="6" fill="var(--bg)" stroke="var(--obs)" stroke-width="2.5"/>`}
   // direction panel
@@ -549,7 +550,7 @@ function renderLiveChart(st){
   for(let o=-span;o<=span;o+=dStep){s+=`<line x1="${ml}" y1="${DY(o)}" x2="${W-mr}" y2="${DY(o)}" stroke="${o===0?'var(--line)':'var(--line-2)'}"/><text x="${ml-6}" y="${DY(o)+4}" text-anchor="end" font-family="var(--mono)" font-size="10" fill="var(--ink-3)">${comp(cen+o)}</text>`}
   const dpath=(pts,fn)=>{let d='',pen=false;pts.forEach(p=>{const v=fn(p);if(v==null){pen=false;return}d+=(pen?'L':'M')+X(p.t).toFixed(1)+','+DY(Math.max(-span,Math.min(span,offset(v,cen)))).toFixed(1);pen=true});return d};
   s+=`<path d="${dpath(cons,c=>c.dir)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
-  Object.keys(STATIONS).forEach(k=>{if(k===stationKey()||!live[k])return;const o2=(obsSeries(k)||[]).filter(p=>p.t>=a&&p.t<=now&&p.dir!=null&&p.spd>3);if(o2.length>1)s+=`<path d="${dpath(o2,p=>p.dir)}" fill="none" stroke="var(${STATIONS[k].c})" stroke-width="1.2" stroke-opacity=".7"/>`});
+  if(sec){const o2=(obsSeries(sec)||[]).filter(p=>p.t>=a&&p.t<=now&&p.dir!=null&&p.spd>3);if(o2.length>1)s+=`<path d="${dpath(o2,p=>p.dir)}" fill="none" stroke="var(--ink-2)" stroke-width="1.2" stroke-opacity=".8"/>`}
   const od=obs.filter(p=>p.dir!=null&&p.spd>3);if(od.length>1)s+=`<path d="${dpath(od,p=>p.dir)}" fill="none" stroke="var(--obs)" stroke-width="2"/>`;
   if(mo&&mo.dir!=null&&mo.t>=a&&mo.t<=b)s+=`<circle cx="${X(mo.t)}" cy="${DY(Math.max(-span,Math.min(span,offset(mo.dir,cen))))}" r="5" fill="var(--bg)" stroke="var(--obs)" stroke-width="2"/>`;
   for(let t=t0;t<=b;t+=lstep){const c=consensusAt(t);if(!c||c.dir==null||X(t)<ml+18)continue;s+=`<text class="tl-lbl" x="${X(t)}" y="${DY(offset(c.dir,cen))-7}" text-anchor="middle" font-size="11" fill="var(--ink)">${c.dir.toFixed(0)}°</text>`}
@@ -564,8 +565,8 @@ function renderLiveChart(st){
     const accS=Math.max(0,Math.min(100,100*(1-v.cons.mae/Math.max(3,meanObs))));const dAbs=v.cons.d!=null?Math.abs(v.cons.d):null;const accD=dAbs!=null?Math.max(0,Math.min(100,100*(1-dAbs/90))):null;
     const cls=accS>=80?'good':accS>=60?'warn':'bad';
     tag.innerHTML=`<span class="pill ${cls}">${accS.toFixed(0)}% speed${accD!=null?' · '+accD.toFixed(0)+'% dir':''}</span>`;
-    const others=Object.keys(STATIONS).filter(k=>k!==stationKey()&&live[k]&&live[k].length).map(k=>{const L=latest(k);return L?`<span style="color:var(${STATIONS[k].c})">■</span> ${STATIONS[k].name} ${L.spd.toFixed(0)} kn ${comp(L.dir)}`:''}).filter(Boolean).join(' · ');
-    $('accCap').innerHTML=`<b>${stn}</b> is the bold trace${$('station').value==='auto'||!$('station').value?' (auto: most upwind for the forecast direction)':''}${others?'; thin lines: '+others:''}.<br>Last 6 h against ${stn}: consensus ran ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn (typical miss ${v.cons.mae.toFixed(1)} kn)${v.cons.d!=null?`, ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right':'left'}`:''} over ${v.n} readings. Right of the line is the consensus forecast for the next 6 hours${st&&st.tE>now&&st.tS<b?', race window shaded':''}.`}
+    const sk=secondaryKey();const L2=sk?latest(sk):null;const others=L2?`${STATIONS[sk].name} ${L2.spd.toFixed(0)} kn ${comp(L2.dir)}`:'';
+    $('accCap').innerHTML=`<b>${stn}</b> is the bold trace${$('station').value==='auto'?' (auto: most upwind for the forecast direction)':''}${others?'; thin grey line: '+others:''}.<br>Last 6 h against ${stn}: consensus ran ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn (typical miss ${v.cons.mae.toFixed(1)} kn)${v.cons.d!=null?`, ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right':'left'}`:''} over ${v.n} readings. Right of the line is the consensus forecast for the next 6 hours${st&&st.tE>now&&st.tS<b?', race window shaded':''}.`}
   else{tag.textContent='Observed vs consensus · ±6 h';$('accCap').textContent=relayURL()?'Accuracy appears once an hour or so of station readings has built up.':'Set the relay URL in Settings to add the observed trace and the accuracy score; the right half is the consensus forecast for the next 6 hours.'}
 }
 function renderStreamNote(st){
