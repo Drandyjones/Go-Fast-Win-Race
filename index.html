@@ -7,6 +7,11 @@
 <title>Go Fast Win Race</title>
 </head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
@@ -230,9 +235,15 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
   </main>
 
   <!-- PAGE: LIVE -->
-  <main class="page" id="pgLive">
+  <main class="page wide" id="pgLive">
     <section class="sec">
-      <h2>Live stations<span class="tag">HHA · 1 min</span></h2>
+      <h2>Now<span class="tag" id="accTag">Observed vs consensus · ±6 h</span></h2>
+      <div class="chartBox" id="liveChart"></div>
+      <div class="legend"><span><i class="obs"></i><b>Observed</b></span><span><i style="background:var(--obs);height:1px;border-top:1px dotted var(--obs);background:none"></i>Obs gust</span><span><i style="background:var(--accent);height:3px"></i>Consensus</span><span><i class="dash"></i>Consensus gust</span></div>
+      <div class="caption" id="accCap">Left of the line: the last 6 hours, station readings against what the consensus said. Right: the next 6 hours of consensus forecast. Accuracy = 100% minus the typical miss as a share of the observed wind (speed) or of 90° (direction).</div>
+    </section>
+    <section class="sec">
+      <h2>Live stations<span class="tag" id="stTag">HHA · 1 min</span></h2>
       <div id="live"></div>
     </section>
     <section class="sec">
@@ -256,7 +267,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
       <div class="tableWrap"><table id="modelTable"></table></div>
       <div class="caption" id="tableCap"></div>
     </section>
-    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v9.</footer>
+    <footer>Forecasts: Open-Meteo (CC BY 4.0) serving ECMWF, NOAA GFS, DWD ICON, UK Met Office, Météo-France and KNMI, plus ECMWF (51) and GEFS (31) ensembles. Live observations and tide predictions: Harwich Haven Authority (hha.co.uk), heights above Harwich chart datum; Open-Meteo marine model (MSL) as fallback. Tide size: predicted range against Harwich springs 3.6 m / neaps 2.3 m. Windy, XC Weather, BBC and PredictWind draw on these same models. GO FAST · WIN RACE v12.</footer>
   </main>
 
   <nav class="tabs" aria-label="Pages">
@@ -271,8 +282,8 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
     <div class="inner">
       <div class="hd"><h2 style="margin:0">Settings</h2><button type="button" id="sheetClose">Done</button></div>
       <div class="set">
-        <div class="wide"><label for="relay">Live data relay URL (Cloudflare Worker)</label><input type="url" id="relay" placeholder="https://race-wind-relay.yourname.workers.dev"></div>
-        <div><label for="station">Observed station</label><select id="station"><option value="landguardgill">Landguard</option><option value="erwarton">Erwarton Beacon</option><option value="harwichhmj">Harwich HM Jetty</option></select></div>
+        <div class="wide"><label for="relay">Live data relay URL (Cloudflare Worker)</label><input type="url" id="relay" placeholder="https://race-wind-relay.drandyjones.workers.dev (built in; override here)"></div>
+        <div><label for="station">Observed station</label><select id="station"><option value="auto">Auto (most upwind)</option><option value="harwichhmj">Harwich HM Jetty</option><option value="erwarton">Erwarton Beacon</option><option value="landguardgill">Landguard</option><option value="eastfortmassoc">East Fort Massac</option></select></div>
         <div><label for="gustThr">Gust alert threshold, kn</label><input type="number" id="gustThr" min="10" max="40" step="1" value="20"></div>
         <div><button id="refresh" type="button" style="width:100%">Refresh data</button></div>
       </div>
@@ -303,7 +314,7 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
         <div><label for="obsDir">Direction, °</label><input type="number" id="obsDir" min="0" max="360" step="1"></div>
         <div><button id="obsClear" type="button">Clear</button></div>
       </div>
-      <p class="note" style="margin-top:12px">Without a relay the browser can't read Harwich Haven's live files (they don't allow cross-site reads). Deploy the small relay script once, paste its URL above, and the live stations, Harwich tide gauge and the port's own tide predictions load automatically.</p>
+      <p class="note" style="margin-top:12px">Live stations, the Harwich tide gauge and the port's tide predictions come from Harwich Haven Authority through the built-in relay. Leave the relay box empty unless you run your own.</p>
     </div>
   </div>
 </div>
@@ -313,7 +324,8 @@ footer{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);line-height:1.
 const LOC={lat:51.995,lon:1.274};
 const TIDE_PT={lat:51.93,lon:1.33};
 const HHA='https://hha.co.uk/wp-content/uploads/hha-met-api/';
-const STATIONS={landguardgill:{name:'Landguard',note:'coast, sensor 11.5 m'},erwarton:{name:'Erwarton Beacon',note:'Stour, 10.5 m'},harwichhmj:{name:'Harwich HM Jetty',note:'harbour, 10 m'}};
+const STATIONS={harwichhmj:{name:'Harwich HM Jetty',note:'harbour · 2.9 nm S',brg:168,c:'--obs'},erwarton:{name:'Erwarton Beacon',note:'Stour · 3.3 nm SW',brg:217,c:'--m3'},landguardgill:{name:'Landguard',note:'coast · 3.9 nm SSE',brg:156,c:'--m1'},eastfortmassoc:{name:'East Fort Massac',note:'approach · 12 nm ESE',brg:124,c:'--m5'}};
+function stationKey(){const v=stationKey();if(v&&v!=='auto'&&STATIONS[v])return v;const c=consensusAt(Date.now());const avail=Object.keys(STATIONS).filter(k=>live[k]&&live[k].length&&k!=='eastfortmassoc');const pool=avail.length?avail:Object.keys(STATIONS).filter(k=>k!=='eastfortmassoc');if(!c||c.dir==null)return pool.includes('harwichhmj')?'harwichhmj':pool[0];let best=null;pool.forEach(k=>{const d=Math.abs(offset(STATIONS[k].brg,c.dir));if(!best||d<best.d)best={k,d}});return best.d<=70?best.k:(pool.includes('harwichhmj')?'harwichhmj':pool[0])}
 const MODELS=[
   {id:'ecmwf_ifs025',name:'ECMWF IFS',used:'Windy · BBC (DTN blend) · PredictWind',c:'--m1'},
   {id:'gfs_seamless',name:'NOAA GFS',used:'XC Weather · Windy · PredictWind',c:'--m2'},
@@ -352,7 +364,8 @@ if(store.start!=null)startEl.value=store.start;if(store.end!=null)endEl.value=st
 ['obsTime','obsSpeed','obsGust','obsDir','relay','kStream','gustThr','station','streamMethod','slackOff','aLW','aHW','chW','chD','flW','flH','diamond'].forEach(k=>{if(store[k]!=null)$(k).value=store[k]});
 if(!$('obsTime').value)$('obsTime').value=fmtT(new Date());
 $('showSpread').checked=!!store.spread;$('showEns').checked=store.ens!==false;
-const relayURL=()=>{const r=($('relay').value||'').trim();if(!r)return null;return r.includes('?')?r:r.replace(/\/$/,'')+'/?url='};
+const DEFAULT_RELAY='https://race-wind-relay.drandyjones.workers.dev';
+const relayURL=()=>{const r=(($('relay').value||'').trim())||DEFAULT_RELAY;return r.includes('?')?r:r.replace(/\/$/,'')+'/?url='};
 const kStream=()=>parseFloat($('kStream').value)||1.4;
 const gustThr=()=>parseFloat($('gustThr').value)||20;
 const num=(id,d)=>{const v=parseFloat($(id).value);return isNaN(v)?d:v};
@@ -368,7 +381,7 @@ async function hha(path){const rl=relayURL();if(!rl)throw new Error('no relay');
 async function load(){
   const msgs=[];$('status').textContent='Loading…';
   const jobs=[
-    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${LOC.lat}&longitude=${LOC.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kn&models=${MODELS.map(m=>m.id).join(',')}&forecast_days=7&timezone=Europe%2FLondon`).then(j=>{
+    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${LOC.lat}&longitude=${LOC.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kn&models=${MODELS.map(m=>m.id).join(',')}&past_days=1&forecast_days=7&timezone=Europe%2FLondon`).then(j=>{
       if(j.error)throw new Error(j.reason);const h=j.hourly;const t0=parseLocal(h.time[0]);
       const ms=MODELS.map(m=>{const sfx=k=>h[k+'_'+m.id]||(Object.keys(h).some(x=>x.endsWith('_'+m.id))?null:h[k]);return {...m,spd:sfx('wind_speed_10m'),dir:sfx('wind_direction_10m'),gst:sfx('wind_gusts_10m')}}).filter(m=>m.spd&&m.dir&&m.spd.some(v=>v!=null));
       wind={t0,n:h.time.length,models:ms};msgs.push(`${ms.length}/${MODELS.length} models`)}).catch(e=>{wind=null;msgs.push('models failed: '+e.message)}),
@@ -442,8 +455,8 @@ function tideSize(t){const ts=tideState(t);if(ts&&ts.datum==='CD'){const p=Math.
   return {pct:p,label:p>=70?'Springs':p<=30?'Neaps':'Mid-cycle',sub:(L.nextS<L.nextN?`springs in ${L.nextS.toFixed(0)} d`:`neaps in ${L.nextN.toFixed(0)} d`)+(ts?` · model range ${ts.range.toFixed(1)} m`:'')+' · lunar estimate'}}
 
 // ---------- observations ----------
-function obsSeries(){ // 10-min means from the selected live station, kn
-  const s=live[$('station').value];if(!s||!s.length)return null;const out=[];let bucket=null;
+function obsSeries(key){ // 10-min means from a live station, kn
+  const s=live[key||stationKey()];if(!s||!s.length)return null;const out=[];let bucket=null;
   for(const r of s){const t=Math.floor(r.timestamp/600)*6e5;if(!bucket||bucket.t!==t){if(bucket)out.push(fin(bucket));bucket={t,s:[],g:[],x:0,y:0,p:[]}}
     if(r.wind_speed!=null){bucket.s.push(r.wind_speed*MS2KN)}if(r.gust_speed!=null)bucket.g.push(r.gust_speed*MS2KN);if(r.wind_direction!=null){const a=r.wind_direction*Math.PI/180;bucket.x+=Math.sin(a);bucket.y+=Math.cos(a)}if(r.atmos_pressure!=null)bucket.p.push(r.atmos_pressure)}
   if(bucket)out.push(fin(bucket));return out;
@@ -453,8 +466,8 @@ function latest(s){const a=live[s];if(!a||!a.length)return null;const r=a[a.leng
 function manualObs(){const sp=parseFloat($('obsSpeed').value),d=parseFloat($('obsDir').value),g=parseFloat($('obsGust').value),t=$('obsTime').value;
   if(isNaN(sp)||!t)return null;const [hh,mm]=t.split(':').map(Number);const day=localDate(dateEl.value);
   return {spd:sp,dir:isNaN(d)?null:d,gst:isNaN(g)?null:g,t:new Date(day.getFullYear(),day.getMonth(),day.getDate(),hh,mm).getTime()}}
-function verify(){ // today's consensus/model error vs observed
-  const o=obsSeries();if(!o||!wind)return null;const day=today.getTime();const pts=o.filter(p=>p.t>=day&&p.t<=Date.now());if(pts.length<6)return null;
+function verify(fromT){ // consensus/model error vs observed since fromT (default midnight)
+  const o=obsSeries();if(!o||!wind)return null;const day=fromT??today.getTime();const pts=o.filter(p=>p.t>=day&&p.t<=Date.now());if(pts.length<6)return null;
   const errs={cons:{s:[],d:[]}};wind.models.forEach(m=>errs[m.id]={s:[],d:[]});
   pts.forEach(p=>{const c=consensusAt(p.t);if(!c||p.spd==null)return;errs.cons.s.push(c.spd-p.spd);if(c.dir!=null&&p.dir!=null&&p.spd>3)errs.cons.d.push(offset(c.dir,p.dir));
     wind.models.forEach((m,i)=>{if(c.vals[i]!=null){errs[m.id].s.push(c.vals[i]-p.spd);if(c.ds[i]!=null&&p.dir!=null&&p.spd>3)errs[m.id].d.push(offset(c.ds[i],p.dir))}})});
@@ -499,7 +512,60 @@ function shifts(st){ // consensus direction shifts across the day, with model ti
 function render(){
   syncSliders();
   const st=windowStats();
-  renderBrief(st);renderTiles(st);renderLive();renderTimeline(st);renderShifts(st);renderCompass(st);renderSpeed(st);renderTable(st);renderStreamNote(st);
+  renderBrief(st);renderTiles(st);renderLive();renderLiveChart(st);renderTimeline(st);renderShifts(st);renderCompass(st);renderSpeed(st);renderTable(st);renderStreamNote(st);
+}
+function renderLiveChart(st){
+  const el=$('liveChart'),tag=$('accTag');if(!wind){el.innerHTML='<p class="caption">Waiting for forecast…</p>';return}
+  const now=Date.now();const a=now-6*36e5,b=now+6*36e5;
+  const W=Math.max(320,el.clientWidth||Math.min(1068,window.innerWidth-32)),ml=34,mr=14,mt=22,sh=Math.max(150,Math.min(220,W*0.3)),gap=22,dh=90,mb=24;const H=mt+sh+gap+dh+mb,pw=W-ml-mr;
+  const X=t=>ml+pw*(t-a)/(b-a);
+  const cons=[];for(let t=a;t<=b;t+=9e5){const c=consensusAt(t);if(c)cons.push(c)}
+  const obsAll=obsSeries()||[];const obs=obsAll.filter(p=>p.t>=a&&p.t<=now);
+  const mo=(!relayURL())?manualObs():null;
+  let maxK=Math.max(8,...cons.map(c=>Math.max(c.spd,c.gst||0)),...obs.map(p=>Math.max(p.spd||0,p.gst||0)));if(mo&&mo.t>=a&&mo.t<=b)maxK=Math.max(maxK,mo.gst||mo.spd);maxK=Math.ceil((maxK+2)/5)*5;
+  const Y=k=>mt+sh*(1-k/maxK);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Observed wind against consensus, last six hours and next six">`;
+  // race window
+  if(st&&st.tE>a&&st.tS<b){const x0=X(Math.max(st.tS,a)),x1=X(Math.min(st.tE,b));s+=`<rect x="${x0}" y="${mt-14}" width="${x1-x0}" height="${sh+gap+dh+14}" fill="var(--window)"/>`;
+    const ly=mt+sh+gap+dh-6;if(x1-x0<150)s+=`<text class="tl-lbl" x="${(x0+x1)/2}" y="${ly}" font-size="12" fill="var(--ink)" text-anchor="middle">Race ${fmtT(st.tS)}–${fmtT(st.tE)}</text>`;
+    else{if(st.tS>=a&&st.tS<=b)s+=`<text class="tl-lbl" x="${X(st.tS)+4}" y="${ly}" font-size="12" fill="var(--ink)">Start ${fmtT(st.tS)}</text>`;
+    if(st.tE>=a&&st.tE<=b)s+=`<text class="tl-lbl" x="${X(st.tE)-4}" y="${ly}" font-size="12" fill="var(--ink)" text-anchor="end">Finish ${fmtT(st.tE)}</text>`}}
+  // grid
+  const kStep=maxK>40?10:5;for(let k=0;k<=maxK;k+=kStep)s+=`<line x1="${ml}" y1="${Y(k)}" x2="${W-mr}" y2="${Y(k)}" stroke="var(--line-2)"/><text x="${ml-6}" y="${Y(k)+4}" text-anchor="end" font-family="var(--mono)" font-size="10" fill="var(--ink-3)">${k}</text>`;
+  const lstep=(pw/12>=55?1:2)*36e5;const t0=Math.ceil(a/lstep)*lstep;for(let t=t0;t<=b;t+=lstep){s+=`<line x1="${X(t)}" y1="${mt}" x2="${X(t)}" y2="${mt+sh+gap+dh}" stroke="var(--line-2)"/><text x="${X(t)}" y="${H-mb+16}" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-2)">${fmtT(t)}</text>`}
+  // past shading
+  s+=`<rect x="${ml}" y="${mt}" width="${X(now)-ml}" height="${sh+gap+dh}" fill="var(--ink)" fill-opacity=".025"/>`;
+  const path=(pts,fn)=>{let d='',pen=false;pts.forEach(p=>{const v=fn(p);if(v==null){pen=false;return}d+=(pen?'L':'M')+X(p.t).toFixed(1)+','+Y(Math.min(v,maxK)).toFixed(1);pen=true});return d};
+  if(cons.length){s+=`<path d="${path(cons,c=>c.gst)}" fill="none" stroke="var(--gust)" stroke-width="1.8" stroke-dasharray="5 4" stroke-opacity=".9"/>`;s+=`<path d="${path(cons,c=>c.spd)}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round"/>`;
+    for(let t=t0;t<=b;t+=lstep){const c=consensusAt(t);if(!c||X(t)<ml+18)continue;s+=`<text class="tl-lbl" x="${X(t)}" y="${Y(c.spd)-8}" text-anchor="middle" font-size="15" fill="var(--ink)">${c.spd.toFixed(0)}</text>`}}
+  Object.keys(STATIONS).forEach(k=>{if(k===stationKey()||!live[k])return;const o2=(obsSeries(k)||[]).filter(p=>p.t>=a&&p.t<=now&&p.spd!=null);if(o2.length>1)s+=`<path d="${path(o2,p=>p.spd)}" fill="none" stroke="var(${STATIONS[k].c})" stroke-width="1.3" stroke-opacity=".7"/>`});
+  if(obs.length>1){s+=`<path d="${path(obs,p=>p.gst)}" fill="none" stroke="var(--obs)" stroke-width="1.2" stroke-dasharray="2 3"/>`;s+=`<path d="${path(obs,p=>p.spd)}" fill="none" stroke="var(--obs)" stroke-width="2.2" stroke-linejoin="round"/>`;const l=obs[obs.length-1];if(l.spd!=null)s+=`<circle cx="${X(l.t)}" cy="${Y(l.spd)}" r="4.5" fill="var(--bg)" stroke="var(--obs)" stroke-width="2"/><text class="tl-lbl" x="${X(l.t)-8}" y="${Y(l.spd)+5}" text-anchor="end" font-size="15" fill="var(--obs)">${l.spd.toFixed(0)}</text>`}
+  if(mo&&mo.t>=a&&mo.t<=b){s+=`<circle cx="${X(mo.t)}" cy="${Y(Math.min(mo.spd,maxK))}" r="6" fill="var(--bg)" stroke="var(--obs)" stroke-width="2.5"/>`}
+  // direction panel
+  const dy0=mt+sh+gap;const dirs=cons.map(c=>c.dir).filter(d=>d!=null);const cen=dirs.length?circMean(dirs).mean:(st?st.dir:0);
+  let span=30;cons.forEach(c=>{if(c.dir!=null)span=Math.max(span,Math.abs(offset(c.dir,cen))+10)});obs.forEach(p=>{if(p.dir!=null&&p.spd>3)span=Math.max(span,Math.abs(offset(p.dir,cen))+8)});span=Math.min(180,Math.ceil(span/15)*15);
+  const DY=o=>dy0+dh*(0.5-o/(2*span));const dStep=span>90?45:span>45?30:15;
+  for(let o=-span;o<=span;o+=dStep){s+=`<line x1="${ml}" y1="${DY(o)}" x2="${W-mr}" y2="${DY(o)}" stroke="${o===0?'var(--line)':'var(--line-2)'}"/><text x="${ml-6}" y="${DY(o)+4}" text-anchor="end" font-family="var(--mono)" font-size="10" fill="var(--ink-3)">${comp(cen+o)}</text>`}
+  const dpath=(pts,fn)=>{let d='',pen=false;pts.forEach(p=>{const v=fn(p);if(v==null){pen=false;return}d+=(pen?'L':'M')+X(p.t).toFixed(1)+','+DY(Math.max(-span,Math.min(span,offset(v,cen)))).toFixed(1);pen=true});return d};
+  s+=`<path d="${dpath(cons,c=>c.dir)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
+  Object.keys(STATIONS).forEach(k=>{if(k===stationKey()||!live[k])return;const o2=(obsSeries(k)||[]).filter(p=>p.t>=a&&p.t<=now&&p.dir!=null&&p.spd>3);if(o2.length>1)s+=`<path d="${dpath(o2,p=>p.dir)}" fill="none" stroke="var(${STATIONS[k].c})" stroke-width="1.2" stroke-opacity=".7"/>`});
+  const od=obs.filter(p=>p.dir!=null&&p.spd>3);if(od.length>1)s+=`<path d="${dpath(od,p=>p.dir)}" fill="none" stroke="var(--obs)" stroke-width="2"/>`;
+  if(mo&&mo.dir!=null&&mo.t>=a&&mo.t<=b)s+=`<circle cx="${X(mo.t)}" cy="${DY(Math.max(-span,Math.min(span,offset(mo.dir,cen))))}" r="5" fill="var(--bg)" stroke="var(--obs)" stroke-width="2"/>`;
+  for(let t=t0;t<=b;t+=lstep){const c=consensusAt(t);if(!c||c.dir==null||X(t)<ml+18)continue;s+=`<text class="tl-lbl" x="${X(t)}" y="${DY(offset(c.dir,cen))-7}" text-anchor="middle" font-size="11" fill="var(--ink)">${c.dir.toFixed(0)}°</text>`}
+  s+=`<text x="${W-mr}" y="${dy0-6}" text-anchor="end" font-size="9.5" fill="var(--ink-3)" font-family="var(--mono)">DIR · UP = VEER</text>`;
+  // now line
+  s+=`<line x1="${X(now)}" y1="${mt-14}" x2="${X(now)}" y2="${dy0+dh}" stroke="var(--obs)" stroke-width="1.5"/><text class="tl-lbl" x="${X(now)}" y="${mt-4}" text-anchor="middle" font-size="12" fill="var(--obs)">NOW ${fmtT(now)}</text>`;
+  s+=`<text x="${ml+2}" y="${mt+12}" font-family="var(--mono)" font-size="9.5" fill="var(--ink-3)" letter-spacing="2">OBSERVED · PAST 6 H</text><text x="${W-mr}" y="${mt+12}" text-anchor="end" font-family="var(--mono)" font-size="9.5" fill="var(--ink-3)" letter-spacing="2">FORECAST · NEXT 6 H</text>`;
+  s+='</svg>';el.innerHTML=s;
+  // accuracy
+  const v=verify(a);const stn=STATIONS[stationKey()].name;
+  if(v&&v.cons.s!=null){const meanObs=obs.filter(p=>p.spd!=null).reduce((m,p)=>m+p.spd,0)/Math.max(1,obs.filter(p=>p.spd!=null).length);
+    const accS=Math.max(0,Math.min(100,100*(1-v.cons.mae/Math.max(3,meanObs))));const dAbs=v.cons.d!=null?Math.abs(v.cons.d):null;const accD=dAbs!=null?Math.max(0,Math.min(100,100*(1-dAbs/90))):null;
+    const cls=accS>=80?'good':accS>=60?'warn':'bad';
+    tag.innerHTML=`<span class="pill ${cls}">${accS.toFixed(0)}% speed${accD!=null?' · '+accD.toFixed(0)+'% dir':''}</span>`;
+    const others=Object.keys(STATIONS).filter(k=>k!==stationKey()&&live[k]&&live[k].length).map(k=>{const L=latest(k);return L?`<span style="color:var(${STATIONS[k].c})">■</span> ${STATIONS[k].name} ${L.spd.toFixed(0)} kn ${comp(L.dir)}`:''}).filter(Boolean).join(' · ');
+    $('accCap').innerHTML=`<b>${stn}</b> is the bold trace${$('station').value==='auto'||!$('station').value?' (auto: most upwind for the forecast direction)':''}${others?'; thin lines: '+others:''}.<br>Last 6 h against ${stn}: consensus ran ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn (typical miss ${v.cons.mae.toFixed(1)} kn)${v.cons.d!=null?`, ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right':'left'}`:''} over ${v.n} readings. Right of the line is the consensus forecast for the next 6 hours${st&&st.tE>now&&st.tS<b?', race window shaded':''}.`}
+  else{tag.textContent='Observed vs consensus · ±6 h';$('accCap').textContent=relayURL()?'Accuracy appears once an hour or so of station readings has built up.':'Set the relay URL in Settings to add the observed trace and the accuracy score; the right half is the consensus forecast for the next 6 hours.'}
 }
 function renderStreamNote(st){
   const el=$('streamNote');const m=streamMethod(),rows=diamondRows();const src=tideSrc();
@@ -515,7 +581,7 @@ function renderTiles(st){
   if(!st||st.none){el.innerHTML=`<div class="cell"><div class="k">Forecast</div><div class="v sm">—</div><div class="s">${wind?'No model covers that window yet. Try a nearer date.':'Waiting for data.'}</div></div>`;return}
   const agreeTxt={good:'Models agree',warn:'Some disagreement',bad:'Models disagree'}[st.agree];
   const ts=tideSize(st.tS);const tsS=tideState(st.tS),tsE=tideState(st.tE);const E=st.E;
-  const isToday=localDate(dateEl.value).getTime()===today.getTime();const L=relayURL()&&isToday?latest($('station').value):null;
+  const isToday=localDate(dateEl.value).getTime()===today.getTime();const L=relayURL()&&isToday?latest(stationKey()):null;
   const shs=shifts(st).filter(x=>x.inWindow);const big=shs.reduce((m,x)=>Math.abs(x.deg)>Math.abs(m)?x.deg:m,0);
   const now=Date.now();const toStart=st.tS-now;const cd=ms=>{const s=Math.max(0,Math.round(ms/1000));return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+'<small>:'+pad(s%60)+'</small>'};
   const stream=s=>s?`${s.stream!=null?s.stream.toFixed(1):'–'}<small>KN</small>`:'–';
@@ -531,7 +597,7 @@ function renderTiles(st){
    </div>
    <div class="cell two">
      <div><div class="k">${toStart>0?'To start':toStart>-(st.tE-st.tS)?'Racing · to finish':'Race over'}</div><div class="v md">${toStart>0?cd(toStart):toStart>-(st.tE-st.tS)?cd(st.tE-now):'—'}</div><div class="s">${fmtT(st.tS)}–${fmtT(st.tE)} · ${localDate(dateEl.value).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div></div>
-     <div><div class="k">${L?STATIONS[$('station').value].name+' now':'Agreement'}</div><div class="v md">${L?comp(L.dir)+' '+L.spd.toFixed(0)+'<small>KN</small>':'<span class="pill '+st.agree+'" style="font-size:11px;vertical-align:middle">'+agreeTxt+'</span>'}</div><div class="s">${L?`g ${L.gst.toFixed(0)} · ${L.dir.toFixed(0)}°`+(()=>{const c=consensusAt(now);return c?` · fcst ${c.spd-L.spd>=0?'+':''}${(c.spd-L.spd).toFixed(0)} kn`:''})():`${st.per.length} models · ±${(st.dirSpread/2).toFixed(0)}° · ${st.spdMin.toFixed(0)}–${st.spdMax.toFixed(0)} kn`}</div></div>
+     <div><div class="k">${L?STATIONS[stationKey()].name+' now':'Agreement'}</div><div class="v md">${L?comp(L.dir)+' '+L.spd.toFixed(0)+'<small>KN</small>':'<span class="pill '+st.agree+'" style="font-size:11px;vertical-align:middle">'+agreeTxt+'</span>'}</div><div class="s">${L?`g ${L.gst.toFixed(0)} · ${L.dir.toFixed(0)}°`+(()=>{const c=consensusAt(now);return c?` · fcst ${c.spd-L.spd>=0?'+':''}${(c.spd-L.spd).toFixed(0)} kn`:''})():`${st.per.length} models · ±${(st.dirSpread/2).toFixed(0)}° · ${st.spdMin.toFixed(0)}–${st.spdMax.toFixed(0)} kn`}</div></div>
    </div>`;
 }
 function renderLive(){
@@ -539,8 +605,9 @@ function renderLive(){
   if(!relayURL()){el.innerHTML=`<p class="note">Live stations need the relay URL (Settings). Until then, type a reading into the manual observation box and it's plotted on the timeline. Sources: <a href="https://hha.co.uk/live-data/" target="_blank" rel="noopener">hha.co.uk/live-data</a>.</p>`;return}
   if(!keys.length){el.innerHTML='<p class="note err">No live data came back. Check the relay URL in Settings and refresh.</p>';return}
   const age=t=>{const m=Math.round((Date.now()-t)/6e4);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'};
+  $('stTag').textContent=`HHA · 1 min · plotting ${STATIONS[stationKey()].name}${($('station').value||'auto')==='auto'?' (auto)':''}`;
   let s='<div class="live">';
-  keys.forEach(k=>{const L=latest(k);if(!L)return;const sel=k===$('station').value;
+  keys.forEach(k=>{const L=latest(k);if(!L)return;const sel=k===stationKey();
     s+=`<div class="st" style="${sel?'border-color:var(--accent)':''}"><div class="n">${STATIONS[k].name}${sel?' <span class="pill good" style="font-size:10px;padding:1px 7px">plotted</span>':''}</div><div class="age">${fmtT(L.t)} · ${age(L.t)} · ${STATIONS[k].note}</div>
       <div class="big">${comp(L.dir)} ${L.spd.toFixed(0)}<small> kn · ${L.dir.toFixed(0)}°</small></div>
       <div class="row">gust ${L.gst.toFixed(0)} kn now · max ${L.gmax.toFixed(0)} kn last hour</div>
@@ -551,7 +618,7 @@ function renderLive(){
       <div class="row">predicted ${r.tide_predicted.toFixed(2)} m · surge ${r.tide_surge>=0?'+':''}${r.tide_surge.toFixed(2)} m</div>
       <div class="row">${ts?`${ts.state.toLowerCase()} ${ts.frac}/12 · next ${ts.next.kind} ${fmtT(ts.next.t)} (${ts.next.h.toFixed(1)} m)`:''}</div></div>`}
   s+='</div>';
-  const v=verify();if(v&&v.cons.s!=null){s+=`<p class="caption" style="margin-top:10px">Today since ${fmtT(v.since)} the consensus has run ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn against ${STATIONS[$('station').value].name}${v.cons.d!=null?` and ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right (veered)':'left (backed)'} of it`:''} · typical miss ${v.cons.mae.toFixed(1)} kn · ${v.n} ten-minute readings. Per-model errors are in the table below.</p>`}
+  const v=verify();if(v&&v.cons.s!=null){s+=`<p class="caption" style="margin-top:10px">Today since ${fmtT(v.since)} the consensus has run ${v.cons.s>=0?'+':''}${v.cons.s.toFixed(1)} kn against ${STATIONS[stationKey()].name}${v.cons.d!=null?` and ${Math.abs(v.cons.d).toFixed(0)}° ${v.cons.d>=0?'right (veered)':'left (backed)'} of it`:''} · typical miss ${v.cons.mae.toFixed(1)} kn · ${v.n} ten-minute readings. Per-model errors are in the table below.</p>`}
   el.innerHTML=s;
 }
 
@@ -710,9 +777,9 @@ function renderBrief(st){
   const conf={good:'Good',warn:'Fair',bad:'Poor'}[st.agree];
   let agree=`<b>Confidence ${conf.toLowerCase()}</b>: ${st.per.length} models within ±${(st.dirSpread/2).toFixed(0)}° and ${st.spdMin.toFixed(0)}–${st.spdMax.toFixed(0)} kn`;
   if(st.E)agree+=`; 80% of ${st.E.n} ensemble runs give ${st.E.s10.toFixed(0)}–${st.E.s90.toFixed(0)} kn`;agree+='.';
-  const isToday=localDate(dateEl.value).getTime()===today.getTime();const L=relayURL()&&isToday?latest($('station').value):null;const v=isToday?verify():null;
-  if(L){const cn=consensusAt(Date.now());if(cn){const es=cn.spd-L.spd,ed=offset(cn.dir,L.dir);agree+=` ${STATIONS[$('station').value].name} now reads ${comp(L.dir)} ${L.spd.toFixed(0)} kn, ${Math.abs(es)<2.5&&Math.abs(ed)<20?'in line with the forecast':`forecast is ${Math.abs(es).toFixed(0)} kn ${es>0?'high':'low'}${Math.abs(ed)>=15?' and '+Math.abs(ed).toFixed(0)+'° '+(ed>0?'right':'left'):''}`}.`}}
-  else if(v&&v.cons.s!=null)agree+=` Today the consensus has run ${Math.abs(v.cons.s).toFixed(1)} kn ${v.cons.s>=0?'high':'low'} against ${STATIONS[$('station').value].name}.`;
+  const isToday=localDate(dateEl.value).getTime()===today.getTime();const L=relayURL()&&isToday?latest(stationKey()):null;const v=isToday?verify():null;
+  if(L){const cn=consensusAt(Date.now());if(cn){const es=cn.spd-L.spd,ed=offset(cn.dir,L.dir);agree+=` ${STATIONS[stationKey()].name} now reads ${comp(L.dir)} ${L.spd.toFixed(0)} kn, ${Math.abs(es)<2.5&&Math.abs(ed)<20?'in line with the forecast':`forecast is ${Math.abs(es).toFixed(0)} kn ${es>0?'high':'low'}${Math.abs(ed)>=15?' and '+Math.abs(ed).toFixed(0)+'° '+(ed>0?'right':'left'):''}`}.`}}
+  else if(v&&v.cons.s!=null)agree+=` Today the consensus has run ${Math.abs(v.cons.s).toFixed(1)} kn ${v.cons.s>=0?'high':'low'} against ${STATIONS[stationKey()].name}.`;
   const day=localDate(dateEl.value).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   el.innerHTML=`<h2>Race area conditions<span class="tag">Win race</span></h2><p>${wind1}${gust}${shiftTxt}</p><p>${tide}</p><p>${agree}</p><div class="meta">${day} · ${fmtT(st.tS)}–${fmtT(st.tE)} · issued ${fmtT(new Date())}</div>`;
 }
@@ -728,7 +795,7 @@ function renderCompass(st){
   const a0=st.dir+st.offMin,a1=st.dir+st.offMax;
   if(st.offMax-st.offMin>0.5){const [ax,ay]=P(a0,R-2),[bx,by]=P(a1,R-2);s+=`<path d="M${c},${c}L${ax},${ay}A${R-2},${R-2},0,${(a1-a0)>180?1:0},1,${bx},${by}Z" fill="var(--accent-soft)"/>`;s+=`<path d="${arc(a0,a1,R-2)}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>`}
   st.per.forEach(p=>{const [x,y]=P(p.dir,R-24);s+=`<circle cx="${x}" cy="${y}" r="5" fill="var(${p.m.c})" stroke="var(--panel)" stroke-width="2"><title>${p.m.name}: ${p.dir.toFixed(0)}°</title></circle>`});
-  const L=relayURL()?latest($('station').value):null;if(L){const [x,y]=P(L.dir,R-24);s+=`<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="var(--obs)" stroke-width="2"><title>Observed now ${L.dir.toFixed(0)}°</title></circle>`}
+  const L=relayURL()?latest(stationKey()):null;if(L){const [x,y]=P(L.dir,R-24);s+=`<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="var(--obs)" stroke-width="2"><title>Observed now ${L.dir.toFixed(0)}°</title></circle>`}
   const [tx,ty]=P(st.dir,R-6),[hx,hy]=P(st.dir,34);
   s+=`<g class="compassArrow"><line x1="${tx}" y1="${ty}" x2="${hx}" y2="${hy}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
   const l1x=c+(R-70)*Math.sin(st.dir*r)+12*Math.sin((st.dir+90)*r),l1y=c-(R-70)*Math.cos(st.dir*r)-12*Math.cos((st.dir+90)*r),l2x=c+(R-70)*Math.sin(st.dir*r)-12*Math.sin((st.dir+90)*r),l2y=c-(R-70)*Math.cos(st.dir*r)+12*Math.cos((st.dir+90)*r);
@@ -742,7 +809,7 @@ function renderCompass(st){
 function renderSpeed(st){
   const el=$('speedbar');if(!st||st.none){el.innerHTML='';return}
   const W=440,H=190,L=14,Rr=14;const maxK=Math.max(30,Math.ceil((st.gstMax||st.spdMax)/5)*5+5);
-  const X=k=>L+(W-L-Rr)*Math.min(k,maxK)/maxK;const O=relayURL()?latest($('station').value):null;
+  const X=k=>L+(W-L-Rr)*Math.min(k,maxK)/maxK;const O=relayURL()?latest(stationKey()):null;
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Wind strength bar: consensus ${st.spd.toFixed(0)} knots, models ${st.spdMin.toFixed(0)} to ${st.spdMax.toFixed(0)}">`;
   const gy=40;
   s+=`<text x="${L}" y="${gy-10}" font-size="11" fill="var(--ink-3)" font-family="var(--body)" letter-spacing=".06em">GUSTS</text>`;
@@ -772,7 +839,7 @@ function renderTable(st){
   t.innerHTML=`<thead><tr><th>Model</th><th>Feeds</th><th class="num">Dir</th><th class="num">vs mean</th><th class="num">Mean kn</th><th class="num">Range</th><th class="num">Gust</th><th class="num">Err today</th></tr></thead><tbody>`+
    st.per.map(p=>{const off=offset(p.dir,st.dir);return `<tr><td><span class="swatch" style="background:var(${p.m.c})"></span>${p.m.name}</td><td style="color:var(--ink-2)">${p.m.used}</td><td class="num">${comp(p.dir)} ${p.dir.toFixed(0)}°</td><td class="num">${off>0?'+':''}${off.toFixed(0)}°</td><td class="num">${p.spd.toFixed(1)}</td><td class="num">${p.spdMin.toFixed(0)}–${p.spdMax.toFixed(0)}</td><td class="num">${p.gst!=null?p.gstMax.toFixed(0):'–'}</td><td class="num">${err(p.m.id)}</td></tr>`}).join('')+
    `<tr style="font-weight:600"><td>Consensus</td><td></td><td class="num">${comp(st.dir)} ${st.dir.toFixed(0)}°</td><td class="num">±${(st.dirSpread/2).toFixed(0)}°</td><td class="num">${st.spd.toFixed(1)}</td><td class="num">${st.spdMin.toFixed(0)}–${st.spdMax.toFixed(0)}</td><td class="num">${st.gstMax!=null?st.gstMax.toFixed(0):'–'}</td><td class="num">${err('cons')}</td></tr></tbody>`;
-  $('tableCap').textContent=v?`Err today = model minus ${STATIONS[$('station').value].name} since ${fmtT(v.since)}: speed in kn, then direction (+ = model is right/clockwise of observed). A sensor at 10–16 m reads higher than the models' 10 m standard in a steady breeze, so a small positive bias is normal.`:'Err today appears once live data is flowing (relay in Settings).';
+  $('tableCap').textContent=v?`Err today = model minus ${STATIONS[stationKey()].name} since ${fmtT(v.since)}: speed in kn, then direction (+ = model is right/clockwise of observed). A sensor at 10–16 m reads higher than the models' 10 m standard in a steady breeze, so a small positive bias is normal.`:'Err today appears once live data is flowing (relay in Settings).';
 }
 
 // ---------- events ----------
@@ -794,7 +861,7 @@ $('zRace').addEventListener('click',()=>{view=defaultView();renderTimeline(windo
 $('zDay').addEventListener('click',()=>{const {d0,d1}=dayBounds();view={a:d0,b:d1};renderTimeline(windowStats())});
 $('zIn').addEventListener('click',()=>zoomBy(1/1.4));
 $('zOut').addEventListener('click',()=>zoomBy(1.4));
-let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>renderTimeline(windowStats()),150)});
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{renderTimeline(windowStats());renderLiveChart(windowStats())},150)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&relayURL())load()});
 function setLed(id,cls){const e=$(id);e.classList.remove('ok','warn','bad');if(cls)e.classList.add(cls)}
 function updateLeds(){setLed('ledModels',wind?(wind.models.length>=4?'ok':'warn'):'bad');setLed('ledEns',ens?'ok':'warn');
@@ -803,12 +870,13 @@ function applyTheme(){const t=store.theme;const root=document.documentElement;if
   const dark=t!=='light';$('themeBtn').title=dark?'Switch to day mode':'Switch to night mode'}
 $('themeBtn').addEventListener('click',()=>{const root=document.documentElement;const dark=root.getAttribute('data-theme')!=='light';store.theme=dark?'light':'dark';save();applyTheme();render()});
 applyTheme();
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===t.dataset.page));store.page=t.dataset.page;save();window.scrollTo(0,0);if(t.dataset.page==='pgTrace')renderTimeline(windowStats())}));
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===t.dataset.page));store.page=t.dataset.page;save();window.scrollTo(0,0);if(t.dataset.page==='pgTrace')renderTimeline(windowStats());if(t.dataset.page==='pgLive')renderLiveChart(windowStats())}));
 if(store.page&&document.getElementById(store.page)){const t=document.querySelector('.tab[data-page="'+store.page+'"]');if(t)t.click()}
 $('gearBtn').addEventListener('click',()=>$('sheet').classList.add('on'));
 $('sheetClose').addEventListener('click',()=>{$('sheet').classList.remove('on');render()});
 setInterval(()=>{if(document.hidden)return;const st=windowStats();if(st&&!st.none&&$('pgRace').classList.contains('on'))renderTiles(st)},1000);
 render();load();
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 })();
 </script>
 </body></html>
